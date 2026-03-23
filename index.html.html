@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gửi Bé Iu Của Anh</title>
+    <style>
+        :root { --pink: #f7b2c9; --dark-pink: #d63384; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--pink); font-family: 'Arial', sans-serif; }
+
+        /* --- Màn hình khóa --- */
+        #lock-screen { position: fixed; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; transition: 0.8s; }
+        #avatar-lock { width: 120px; height: 120px; border-radius: 50%; border: 4px solid white; margin-bottom: 20px; object-fit: cover; }
+        #pin-display { font-size: 2rem; color: white; height: 40px; margin-bottom: 20px; letter-spacing: 5px; }
+        #pin-pad { display: grid; grid-template-columns: repeat(3, 70px); gap: 15px; }
+        .btn { width: 70px; height: 70px; border-radius: 50%; border: 2px solid #fff; background: rgba(255,255,255,0.2); color: white; font-size: 1.5rem; cursor: pointer; }
+
+        /* --- Màn hình chính & Gallery --- */
+        #main-content { position: fixed; inset: 0; display: none; z-index: 10; }
+        
+        .photo-item { 
+            position: absolute; width: 130px; padding: 8px; background: white; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2); bottom: -200px; left: 50%; 
+            opacity: 0; transition: all 1.5s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .photo-item img { width: 100%; display: block; }
+
+        /* Animation nhún nhảy cho ảnh ở đoạn cuối */
+        @keyframes floating {
+            0%, 100% { transform: translateY(0) rotate(var(--r)); }
+            50% { transform: translateY(-15px) rotate(var(--r)); }
+        }
+
+        /* --- Thiệp Note (Thư tay) --- */
+        #note-card {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
+            width: 280px; background: #fffde7; padding: 25px; border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 50;
+            transition: 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-align: center; color: #444; line-height: 1.6;
+        }
+        #note-card.show { transform: translate(-50%, -50%) scale(1); }
+
+        /* Nút mở quà ban đầu */
+        #open-gift-trigger { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            padding: 15px 30px; border-radius: 30px; border: none; background: var(--dark-pink);
+            color: white; font-weight: bold; cursor: pointer; z-index: 60;
+        }
+
+        .heart { position: absolute; color: #ff4d6d; animation: fall linear forwards; }
+        @keyframes fall { to { transform: translateY(100vh) rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div id="lock-screen">
+        <img src="image_30.png" id="avatar-lock">
+        <div id="pin-display"></div>
+        <div id="pin-pad">
+            <button class="btn">1</button><button class="btn">2</button><button class="btn">3</button>
+            <button class="btn">4</button><button class="btn">5</button><button class="btn">6</button>
+            <button class="btn">7</button><button class="btn">8</button><button class="btn">9</button>
+            <button class="btn" onclick="clearPin()">C</button>
+            <button class="btn">0</button>
+            <button class="btn" onclick="checkPin()" style="background: var(--dark-pink);">✔</button>
+        </div>
+    </div>
+
+    <div id="main-content">
+        <button id="open-gift-trigger">MỞ QUÀ NÈ</button>
+        
+        <div id="note-card">
+            <h3 style="color: var(--dark-pink); margin-top: 0;">Gửi Công Chúa ❤️</h3>
+            <p>Gửi ngoan xinh yêu của anh! ❤️
+                Chẳng nhân một dịp đặc biệt nào cả, anh chỉ muốn gửi đến em những dòng này để nói rằng anh cảm thấy mình thật may mắn khi có em trong đời. Cảm ơn em đã luôn ở bên cạnh, kiên nhẫn với những khuyết điểm và cùng anh xây dựng những kỷ niệm đẹp nhất. Anh không hứa sẽ mang cho em cả thế giới, nhưng anh hứa sẽ luôn là người đứng sau ủng hộ, là chỗ dựa vững chắc và yêu thương em bằng tất cả những gì anh có. Yêu em thật nhiều!
+            </p>
+            <p style="font-family: 'Brush Script MT', cursive; font-size: 1.2rem;">Ký tên: Nguyễn Hoàng Nam</p>
+        </div>
+
+        <div id="gallery">
+            <div class="photo-item"><img src="image_30.png"></div>
+            <div class="photo-item"><img src="image_31.png"></div>
+            <div class="photo-item"><img src="image_32.png"></div>
+            <div class="photo-item"><img src="image_33.png"></div>
+            <div class="photo-item"><img src="image_34.png"></div>
+            <div class="photo-item"><img src="image_30.png"></div>
+            <div class="photo-item"><img src="image_31.png"></div>
+            <div class="photo-item"><img src="image_32.png"></div>
+        </div>
+    </div>
+
+    <audio id="bg-music" loop><source src="music.mp3" type="audio/mpeg"></audio>
+
+    <script>
+        let input = "";
+        const pass = "2011";
+
+    
+        document.querySelectorAll('.btn').forEach(b => {
+            if(b.innerText !== '✔' && b.innerText !== 'C') {
+                b.onclick = () => { if(input.length < 4) { input += b.innerText; updatePin(); } };
+            }
+        });
+
+        function updatePin() { document.getElementById('pin-display').innerText = "*".repeat(input.length); }
+        function clearPin() { input = ""; updatePin(); }
+
+        function checkPin() {
+            if(input === pass) {
+                document.getElementById('lock-screen').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('lock-screen').style.display = 'none';
+                    document.getElementById('main-content').style.display = 'block';
+                    document.getElementById('bg-music').play();
+                }, 800);
+            } else { alert("Sai mã rồi bé ơi!"); clearPin(); }
+        }
+
+        // Bắn ảnh + Hiện Note
+        document.getElementById('open-gift-trigger').onclick = function() {
+            this.style.display = 'none';
+            const items = document.querySelectorAll('.photo-item');
+            
+            items.forEach((item, i) => {
+                setTimeout(() => {
+                    const top = Math.random() * 70 + 5 + "%";
+                    const left = Math.random() * 80 + 5 + "%";
+                    const rotate = (Math.random() * 30 - 15) + "deg";
+                    
+                    item.style.opacity = "1";
+                    item.style.top = top;
+                    item.style.left = left;
+                    item.style.setProperty('--r', rotate);
+                    item.style.transform = `rotate(${rotate})`;
+                    
+                    // Thêm animation nhún nhảy sau khi bay xong
+                    setTimeout(() => {
+                        item.style.animation = "floating 3s ease-in-out infinite";
+                    }, 1500);
+                }, i * 150);
+            });
+
+            // Hiện thiệp Note sau khi ảnh bay gần hết
+            setTimeout(() => {
+                document.getElementById('note-card').classList.add('show');
+            }, 2000);
+        };
+
+        // Trái tim rơi
+        setInterval(() => {
+            const h = document.createElement('div');
+            h.className = 'heart'; h.innerHTML = "❤️";
+            h.style.left = Math.random() * 100 + "vw";
+            h.style.animationDuration = (Math.random() * 3 + 2) + "s";
+            document.body.appendChild(h);
+            setTimeout(() => h.remove(), 5000);
+        }, 400);
+    </script>
+</body>
+</html>
